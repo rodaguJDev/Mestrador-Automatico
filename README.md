@@ -12,5 +12,5 @@ Como Instalar:
         
         + pip install -r requirements.txt
         
-    execute "main.py"
+    - execute "main.py"
     
