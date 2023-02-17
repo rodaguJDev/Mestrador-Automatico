@@ -1,4 +1,5 @@
 Mestrador Automatico
+
 Como Instalar:
     - Instale python pelo site https://www.python.org/downloads/ 
     - Faça o download de todos os arquivos do github e os salve numa mesma pasta
