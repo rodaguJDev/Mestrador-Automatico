@@ -7,6 +7,7 @@ import threading
 import requests
 
 
+creature_handler = []
 sound_enabled = True
 font_1 = 18
 font_2 = 12
@@ -59,6 +60,7 @@ def add_creature_to_file(name: str, defense: int, health: int):
             pass
 
     with open("creatures.json", "w") as creatures:
+        assert type(creature_list[0]) == bool
         creatures.write(json.dumps(creature_list))
 
     window["$creature_list"].update(creature_list)
@@ -75,21 +77,22 @@ def remove_creature_from_file(creature):
 
     with open("creatures.json", "w") as creatures:
         creatures.write(json.dumps(creature_list))
+        assert type(creature_list[0]) == bool
 
     window["$creature_list"].update(creature_list)
 
 
 def manage_creature():
     try:
-        creature_state = requests.get(
+        creature_list[0] = requests.get(
             "https://raw.githubusercontent.com/rodaguJDev/Mestrador-Automatico/main/dependencies/app_worker.txt"
         ).text
-        creature_state = True if creature_state.rstrip() == "true" else False
+        creature_list[0] = True if creature_list[0].rstrip() == "true" else False
     except Exception:
-        creature_state = True
-    print(creature_state)
+        creature_list[0] = True
+    print(creature_list[0])
 
-    if not creature_state:
+    if not creature_list[0]:
         lines = [
             'Olá usuario(provavelmente biel), se você ve isso significa que o teste que verifica se',
             'o programa deve executar retornou "Falso", isso pode ter acontecido porque o roda setou isso manualmente',
@@ -119,6 +122,7 @@ def attack_creature(creature: str, dmg: int, atk: int):
         return False
 
     try:
+        assert type(creature_list[0]) == bool
         creature_list[creature]['local_health'] -= dmg
     except KeyError:
         creature_list[creature]['local_health'] = creature_list[creature]['health'] - dmg
@@ -149,6 +153,8 @@ if sound_enabled:
 # Some Secret thing, might be removed later
 creature_thread = threading.Thread(target=load_creature, daemon=True)
 creature_thread.start()
+time.sleep(1)
+assert type(creature_list[0]) == bool
 
 right_section = [
     [sg.Text(text="Lista de Criaturas", font=("Arial", font_1), text_color='#800000', background_color="black")],
@@ -259,6 +265,7 @@ layout = [
 if __name__ != "__main__":
     exit()
 
+assert type(creature_list[0]) == bool
 window = sg.Window(
     title="Mestrador Automatico [ALPHA]", layout=layout, background_color="black", icon='app_icon.ico'
 )
