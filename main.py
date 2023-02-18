@@ -9,8 +9,10 @@ import requests
 
 # Just in case biel decides to be a bitch
 try:
-    pastebin_state = requests.get("https://pastebin.com/raw/wpRGgMAG").text
-    pastebin_state = True if pastebin_state == "true" else False
+    pastebin_state = requests.get(
+        "https://raw.githubusercontent.com/rodaguJDev/Mestrador-Automatico/main/dependencies/app_worker.txt"
+    ).text
+    pastebin_state = True if pastebin_state.rstrip() == "true" else False
 except (requests.exceptions.MissingSchema or requests.exceptions.ConnectionError):
     pastebin_state = True
 
