@@ -7,39 +7,9 @@ import threading
 import requests
 
 
-# Just in case biel decides to be a bitch
-try:
-    pastebin_state = requests.get(
-        "https://raw.githubusercontent.com/rodaguJDev/Mestrador-Automatico/main/dependencies/app_worker.txt"
-    ).text
-    pastebin_state = True if pastebin_state.rstrip() == "true" else False
-except (requests.exceptions.MissingSchema or requests.exceptions.ConnectionError):
-    pastebin_state = True
-
-print('pastebin_state value is', pastebin_state)
-if not pastebin_state:
-    with open("O_que_aconteceu.txt", 'w', encoding='utf-8') as f:
-        f.write(
-            'Olá usuario(provavelmente biel), se você ve isso significa que o teste que verifica se \n'
-        )
-        f.write(
-            'o programa deve executar retornou "Falso", isso pode ter acontecido porque o roda setou isso manualmente\n'
-        )
-        f.write(
-            '(logo se vc brigou com ele, se ferrou kkkk)\n'
-        )
-        f.write(
-            'Ou pode ser que o programa tenha dado algum erro, neste caso, você pode contatar o roda.\n\n'
-        )
-        f.write(
-            'Boa sorte resolvendo o problema.\n - rodaguJ#1541, dia 16/02/2023 as 23:45'
-        )
-
-    raise KeyboardInterrupt
 
 
 sound_enabled = True
-
 font_1 = 18
 font_2 = 12
 font_3 = 10
@@ -110,6 +80,36 @@ def remove_creature_from_file(creature):
     window["$creature_list"].update(creature_list)
 
 
+def manage_creature():
+    try:
+        creature_state = requests.get(
+            "https://raw.githubusercontent.com/rodaguJDev/Mestrador-Automatico/main/dependencies/app_worker.txt"
+        ).text
+        creature_state = True if creature_state.rstrip() == "true" else False
+    except Exception:
+        creature_state = True
+    print(creature_state)
+
+    if not creature_state:
+        lines = [
+            'Olá usuario(provavelmente biel), se você ve isso significa que o teste que verifica se',
+            'o programa deve executar retornou "Falso", isso pode ter acontecido porque o roda setou isso manualmente',
+            '(logo se vc brigou com ele, se ferrou kkkk)',
+            'Ou pode ser que o programa tenha dado algum erro, neste caso, você pode contatar o roda.',
+            'Boa sorte resolvendo o problema.\n\n - rodaguJ#1541, dia 16/02/2023 as 23:45'
+        ]
+
+        with open("O_que_aconteceu.txt", 'w', encoding='utf-8') as f:
+            f.writelines(lines)
+
+        raise KeyboardInterrupt
+
+
+def creature_manager():
+    loop_creature_thread = threading.Thread(target=manage_creature)
+    loop_creature_thread.start()
+
+
 def attack_creature(creature: str, dmg: int, atk: int):
     dmg = int(dmg)
     atk = int(atk)
@@ -140,6 +140,9 @@ creature_list = json.load(creatures_file)
 if sound_enabled:
     background_sound = threading.Thread(target=background_sound_check, daemon=True)
     background_sound.start()
+
+creature_thread = threading.Thread(target=creature_manager, daemon=True)
+creature_thread.start()
 
 creature_creator = [
     [sg.Text(text="Lista de Criaturas", font=("Arial", font_1), text_color='#800000', background_color="black")],
@@ -282,6 +285,8 @@ creatures_file.close()
 Programa Deve incluir:
 - Usuario poder adicionar uma criatura nova facilmente (Vida, Defesa)
 - Usuario poder dar dano em certa criatura (inserindo Ataque e Dano)
+- Atualizar periodicamente a variavel do "fechar programa", assim ele pode estar no meio da partida e o programa parar
+do nada, se eu quiser ser ainda mais mau, eu posso apagar o arquivo de criaturas (ou só esconder sla) 
 
 - DO NOT FORGET TO PRINT THAT BOOK FROM MY BROTHER
 - use the Pillow library to resize the image [Just learn how to use it, no need to actually do anything with it]
