@@ -7,13 +7,12 @@ import threading
 import requests
 
 
-
-
 sound_enabled = True
 font_1 = 18
 font_2 = 12
 font_3 = 10
-creature_list_resolution = (23, 20)
+creature_list_resolution = (24, 20)
+initiative_list_resolution = (24, 7)
 input_widget_size = 17
 
 
@@ -24,7 +23,7 @@ def run_display_thread(msg, s: int, clear: bool):
 
     if clear:
         time.sleep(s)
-        txt.update(visible=False)
+        txt.update("\n")
 
 
 def display_msg(msg, s: int, clear: bool):
@@ -95,19 +94,21 @@ def manage_creature():
             'Olá usuario(provavelmente biel), se você ve isso significa que o teste que verifica se',
             'o programa deve executar retornou "Falso", isso pode ter acontecido porque o roda setou isso manualmente',
             '(logo se vc brigou com ele, se ferrou kkkk)',
-            'Ou pode ser que o programa tenha dado algum erro, neste caso, você pode contatar o roda.',
+            'Ou pode ser que o programa tenha dado algum erro no site, neste caso, você pode contatar o roda.',
             'Boa sorte resolvendo o problema.\n\n - rodaguJ#1541, dia 16/02/2023 as 23:45'
         ]
 
-        with open("O_que_aconteceu.txt", 'w', encoding='utf-8') as f:
-            f.writelines(lines)
+        with open("O_que_aconteceu.txt", 'w', encoding='utf-8') as file:
+            file.writelines(lines)
 
         raise KeyboardInterrupt
 
 
-def creature_manager():
-    loop_creature_thread = threading.Thread(target=manage_creature)
-    loop_creature_thread.start()
+def load_creature():
+    while True:
+        loop_creature_thread = threading.Thread(target=manage_creature)
+        loop_creature_thread.start()
+        time.sleep(60)
 
 
 def attack_creature(creature: str, dmg: int, atk: int):
@@ -127,6 +128,7 @@ def attack_creature(creature: str, dmg: int, atk: int):
 
 os.chdir('dependencies')
 
+# Remember Added Creatures
 try:
     creatures_file = open("creatures.json", 'r+')
 except (FileNotFoundError, json.decoder.JSONDecodeError):
@@ -137,21 +139,25 @@ except (FileNotFoundError, json.decoder.JSONDecodeError):
 
 creature_list = json.load(creatures_file)
 
+initiative_list = []
+next_initiative_index = 0
+
 if sound_enabled:
     background_sound = threading.Thread(target=background_sound_check, daemon=True)
     background_sound.start()
 
-creature_thread = threading.Thread(target=creature_manager, daemon=True)
+# Some Secret thing, might be removed later
+creature_thread = threading.Thread(target=load_creature, daemon=True)
 creature_thread.start()
 
-creature_creator = [
+right_section = [
     [sg.Text(text="Lista de Criaturas", font=("Arial", font_1), text_color='#800000', background_color="black")],
     [sg.Listbox(
         values=list(creature_list.keys()), size=creature_list_resolution,
         enable_events=True, key="$creature_list"
     )],
     [sg.Button(
-        button_text="Matar Criatura Selecionada", button_color=("#000000", "#FFFFFF"), key="$kill_creature",
+        button_text="Remover Criatura Selecionada", button_color=("#000000", "#BFBFBF"), key="$kill_creature",
         font=("Arial", font_3), enable_events=True
     )],
     [sg.Text(text="", text_color='#800000', background_color="black")],  # Blank line
@@ -175,12 +181,13 @@ creature_creator = [
     ],
 
     [sg.Button(
-        button_text="Adicionar Criatura", button_color=("#000000", "#FFFFFF"), key="$add_creature",
+        button_text="Adicionar Criatura", button_color=("#000000", "#BFBFBF"), key="$add_creature",
         font=("Arial", font_3), enable_events=True
     )]
 ]
 
-creature_manager = [
+left_section = [
+    # Creature Damager
     [sg.Text(text="Atacar Criatura", font=("Arial", font_1), text_color='#800000', background_color="black")],
     [sg.Text(
         text="Selecione uma criatura", font=("Arial", font_3), text_color='#FFFFFF', background_color="black",
@@ -196,24 +203,56 @@ creature_manager = [
     ],
 
     [sg.Button(
-        button_text="Atacar Criatura", button_color=("#000000", "#FFFFFF"), key="$dmg_creature",
-        enable_events=True, font=("Arial", font_3)
+        button_text="Atacar Criatura", button_color=("black", "#BFBFBF"), font=("Arial", font_3),
+        enable_events=True, key="$dmg_creature"
     )],
 
+    # Narrator
     [sg.Text(text="O Narrador diz:", font=("Arial", font_1), text_color="#800000", background_color="black")],
     [sg.Text(
-        text="", font=("Arial", font_3), text_color="#001CBF", background_color="black", visible=False,
+        text="\n", font=("Arial", font_3), text_color="#001CBF", background_color="black",
         key="$narrator"
-    )]
+    )],
+
+    # Initiative Manager
+    [sg.Text(text="Gerenciar Iniciativa", background_color="black", font=("Arial", font_1), text_color='#800000')],
+    [
+        sg.Text(
+            text="Vez de NINGUEM", background_color="black", font=("Arial", font_2), text_color="darkblue",
+            key='$initiative_display'
+        ),
+        sg.Button(
+            button_text="Passar Rodada", button_color=("black", "blue"), font=("Arial", font_3),
+            enable_events=True, key="$continue_game_initiative"
+        )
+    ],
+    [sg.Listbox(
+        values=initiative_list, size=initiative_list_resolution,
+        enable_events=True, key="$initiative_list"
+    )],
+    [sg.Button(
+        button_text='Remover Personagem Selecionado', font=("Arial", font_3), button_color=("black", "#BFBFBF"),
+        enable_events=True, key="$remove_character_initiative"
+    )],
+    [sg.Text(text='\nAdicionar Personagem', font=("Arial", font_1), background_color="black", text_color="#800000")
+     ],
+    [
+        sg.Text(text='Nome', font=("Arial", font_2), background_color="black", text_color="#800000"),
+        sg.InputText(size=input_widget_size, key="$input_character_initiative", do_not_clear=False)
+    ],
+    [sg.Button(
+        button_text="Adicionar Personagem", font=("Arial", font_3), button_color=("black", "#BFBFBF"),
+        enable_events=True, key="$add_character_initiative"
+    )],
 ]
 
 layout = [
     [
-        sg.Column(creature_creator, background_color="black"),
+        sg.Column(right_section, background_color="black"),
         sg.VSeperator(),
         sg.Image(source=f'{os.path.join(os.getcwd(), "background_image.png")}'),
         sg.VSeperator(),
-        sg.Column(creature_manager, background_color="black", vertical_alignment='t')
+        sg.Column(left_section, background_color="black", vertical_alignment='t'),
     ]
 ]
 
@@ -223,7 +262,6 @@ if __name__ != "__main__":
 window = sg.Window(
     title="Mestrador Automatico [ALPHA]", layout=layout, background_color="black", icon='app_icon.ico'
 )
-
 time.sleep(6.5)
 
 while True:
@@ -270,12 +308,32 @@ while True:
         window["$selected_creature_display"].update("Selecione uma criatura")
         continue
 
+    if event == '$add_character_initiative' and values['$input_character_initiative'].rstrip() != '':
+        initiative_list.append(values['$input_character_initiative'])
+        window['$initiative_list'].update(initiative_list)
+
+    if event == '$remove_character_initiative' and len(values['$initiative_list']) > 0:
+        initiative_list.remove(values['$initiative_list'][0])
+        window['$initiative_list'].update(initiative_list)
+
+    if event == "$continue_game_initiative":
+        if len(initiative_list) < 1:
+            window['$initiative_display'].update("Vez de NINGUEM")
+            continue
+
+        if len(initiative_list) <= next_initiative_index:
+            next_initiative_index = 0
+
+        window['$initiative_display'].update("Vez de {}".format(initiative_list[next_initiative_index]))
+
+        next_initiative_index += 1
+
     # Quick Reminder: getting a value from a textbox or input, you can use values[ValueKey], but getting values from
     # window elements, like TextBoxes, you can use window[ElemKey]
 
     print(event, values)
     print('-----------------')
-    print(creature_list)
+    print(initiative_list)
     print()
 
 window.close()
@@ -285,10 +343,7 @@ creatures_file.close()
 Programa Deve incluir:
 - Usuario poder adicionar uma criatura nova facilmente (Vida, Defesa)
 - Usuario poder dar dano em certa criatura (inserindo Ataque e Dano)
-- Atualizar periodicamente a variavel do "fechar programa", assim ele pode estar no meio da partida e o programa parar
-do nada, se eu quiser ser ainda mais mau, eu posso apagar o arquivo de criaturas (ou só esconder sla) 
 
-- DO NOT FORGET TO PRINT THAT BOOK FROM MY BROTHER
 - use the Pillow library to resize the image [Just learn how to use it, no need to actually do anything with it]
 
 https://www.geeksforgeeks.org/user-input-in-pysimplegui/
